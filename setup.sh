@@ -2,8 +2,8 @@
 docker rm -f kind-registry || true
 kind delete clusters --all
 
-if lsof -i :5000 -sTCP:LISTEN &> /dev/null; then
-    echo "Port 5000 is already in use. Exiting."
+if lsof -i :30500 -sTCP:LISTEN &> /dev/null; then
+    echo "Port 30500 is already in use. Exiting."
     exit 1
 fi
 
@@ -24,15 +24,15 @@ fi
 
 
 
-docker run -d -p 5000:5000 --name kind-registry registry:2
+docker run -d -p 30500:5000 --restart always --name kind-registry registry:2
 
 cat <<EOF | kind create cluster --name platform --config -
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
   - |-
-    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
-      endpoint = ["http://kind-registry:5000"]
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:30500"]
+    endpoint = ["http://kind-registry:30500"]
 nodes:
   - role: control-plane
   - role: worker
@@ -49,8 +49,8 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
   - |-
-    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
-      endpoint = ["http://kind-registry:5000"]
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:30500"]
+    endpoint = ["http://kind-registry:30500"]
 nodes:
   - role: control-plane
   - role: worker
@@ -65,8 +65,8 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
   - |-
-    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
-      endpoint = ["http://kind-registry:5000"]
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:30500"]
+    endpoint = ["http://kind-registry:30500"]
 nodes:
   - role: control-plane
   - role: worker
