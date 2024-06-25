@@ -27,7 +27,8 @@ function startRegistry {
 }
 function createKindCluster {
     local name=$1
-    local port=$2
+    local containerPort=$2
+    local hostPort=$3
 
 cat <<EOF | kind create cluster --name ${name} --config -
 kind: Cluster
@@ -40,8 +41,8 @@ nodes:
   - role: control-plane
   - role: worker
     extraPortMappings:
-    - containerPort: ${port}
-      hostPort: ${port}
+    - containerPort: ${containerPort}
+      hostPort: ${hostPort}
       protocol: TCP
 EOF
 
@@ -181,11 +182,11 @@ cleanup
 checkPorts
 startRegistry
 
-createKindCluster platform 30000
+createKindCluster platform 31337 8080
 setupPlatform
-createKindCluster worker1 30001
+createKindCluster worker1 30001 8081
 setupWorker worker1
-createKindCluster worker2 30002
+createKindCluster worker2 30002 8082
 setupWorker worker2
 setupDestination worker1
 setupDestination worker2
