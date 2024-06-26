@@ -11,7 +11,7 @@ export REGISTRY_PORT=30500
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-cleanup: cleanupKindClusters cleanupRegistry ## Cleans up the kind clusters and the registry
+cleanup: cleanupKindClusters cleanupRegistry stopKindCloudProvider ## Cleans up the kind clusters and the registry
 
 createSudoersFile: ## Creates the sudoers file
 	@source ./common.sh && createSudoersFile
@@ -42,7 +42,7 @@ setupWorkerCluster2: ## Sets up the worker cluster 2
 runKindCloudProvider: ## Runs the kind cloud provider
 	@source ./common.sh && runCloudProviderKindInBackground
 
-stopsKindCloudProvider: ## Runs the kind cloud provider
+stopKindCloudProvider: ## Runs the kind cloud provider
 	@source ./common.sh && stopCloudProviderKindInBackground
 
 run: runKindCloudProvider ## Runs local setup
