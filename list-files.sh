@@ -1,3 +1,4 @@
 #!/bin/bash -e
-mc alias set kratix http://127.0.0.01:8080 minioadmin minioadmin
+LB_IP=$(kubectl --context kind-platform -n kratix-platform-system get svc/minio -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+mc alias set kratix http://$LB_IP:80 minioadmin minioadmin
 mc ls -r kratix

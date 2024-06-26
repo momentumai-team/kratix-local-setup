@@ -1,34 +1,45 @@
 #! /bin/bash -e
-function cleanup {
+function createSudoersFile {
+    execPath=$(which cloud-provider-kind)
+    whoami=$(whoami)
+    sudo rm -rf /private/etc/sudoers.d/cloud-provider-kind
+sudo tee /private/etc/sudoers.d/cloud-provider-kind << EOF
+$whoami ALL=(ALL) NOPASSWD: $execPath
+$whoami ALL=(ALL) NOPASSWD: /usr/bin/pkill -f cloud-provider-kind
+$whoami ALL=(ALL) NOPASSWD: /usr/bin/pgrep -f cloud-provider-kind
+EOF
+}
+
+function stopCloudProviderKindInBackground {
+    sudo pkill -f cloud-provider-kind || true
+    # Wait until the processes are terminated
+    while sudo pgrep -f cloud-provider-kind > /dev/null; do
+        echo "Waiting for cloud-provider-kind to stop..."
+        sleep 1
+    done
+}
+
+function runCloudProviderKindInBackground {
+    stopCloudProviderKindInBackground
+    sudo cloud-provider-kind > /dev/null 2>&1 &
+}
+
+
+function cleanupKindClusters {
     kind delete clusters --all
 }
 
-function checkPorts {
-if lsof -i :8080 -sTCP:LISTEN &> /dev/null; then
-    echo "Port 8080 is already in use. Exiting."
-    exit 1
-fi
-
-if lsof -i :8081 -sTCP:LISTEN &> /dev/null; then
-    echo "Port 8081 is already in use. Exiting."
-    exit 1
-fi
-
-if lsof -i :8082 -sTCP:LISTEN &> /dev/null; then
-    echo "Port 8082 is already in use. Exiting."
-    exit 1
-fi
+function cleanupRegistry {
+    docker rm -f kind-registry || true
 }
 
-function startRegistry {
+function setupRegistry {
     if [ "$(docker inspect -f '{{.State.Running}}' "${REGISTRY_NAME}" 2>/dev/null || true)" != 'true' ]; then
       docker run -d --restart=always -p "127.0.0.1:$REGISTRY_PORT:5000" --network bridge --name $REGISTRY_NAME registry:2
     fi
 }
 function createKindCluster {
     local name=$1
-    local containerPort=$2
-    local hostPort=$3
 
 cat <<EOF | kind create cluster --name ${name} --config -
 kind: Cluster
@@ -40,10 +51,6 @@ containerdConfigPatches:
 nodes:
   - role: control-plane
   - role: worker
-    extraPortMappings:
-    - containerPort: ${containerPort}
-      hostPort: ${hostPort}
-      protocol: TCP
 EOF
 
 REGISTRY_DIR="/etc/containerd/certs.d/localhost:${REGISTRY_PORT}"
@@ -94,6 +101,24 @@ function setupPlatform {
     # Install MinIO and register it as a BucketStateStore
     kubectl apply --context kind-platform --filename https://raw.githubusercontent.com/syntasso/kratix/main/config/samples/minio-install.yaml
     kubectl apply --context kind-platform --filename https://raw.githubusercontent.com/syntasso/kratix/main/config/samples/platform_v1alpha1_bucketstatestore.yaml
+    kubectl --context kind-platform delete service -n kratix-platform-system minio --ignore-not-found=true
+cat <<EOF | kubectl apply --context kind-platform --filename -
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: kratix-platform-system
+spec:
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 9000
+  selector:
+    run: minio
+  type: LoadBalancer
+EOF
+
 }
 
 function setupWorker {
@@ -175,18 +200,3 @@ spec:
 EOF
 
 }
-
-export REGISTRY_NAME=kind-registry
-export REGISTRY_PORT=30500
-cleanup
-checkPorts
-startRegistry
-
-createKindCluster platform 31337 8080
-setupPlatform
-createKindCluster worker1 30001 8081
-setupWorker worker1
-createKindCluster worker2 30002 8082
-setupWorker worker2
-setupDestination worker1
-setupDestination worker2
