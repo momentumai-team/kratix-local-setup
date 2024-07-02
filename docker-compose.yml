@@ -1,0 +1,23 @@
+services:
+  registry:
+    container_name: registry
+    image: registry:2
+    restart: always
+    volumes:
+      - ./registry/data:/var/lib/registry
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "35000:5000"
+  gitea:
+    container_name: gitea
+    image: gitea/gitea:1.22.0-rootless
+    restart: always
+    volumes:
+      - ./gitea/data:/var/lib/gitea
+      - ./gitea/config:/etc/gitea
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "33000:3000"
+      - "2222:2222"

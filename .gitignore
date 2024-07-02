@@ -1,2 +1,4 @@
 .envrc
 .zed
+registry
+gitea/data

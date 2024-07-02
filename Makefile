@@ -5,46 +5,50 @@ SHELL := /bin/bash
 
 .PHONY: help
 
-export REGISTRY_NAME=kind-registry
-export REGISTRY_PORT=30500
-
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-cleanup: cleanupKindClusters cleanupRegistry stopKindCloudProvider ## Cleans up the kind clusters and the registry
+define runScript
+	@echo "Running $(1)"
+    @source ./common.sh && $(1) $(args)
+endef
 
-createSudoersFile: ## Creates the sudoers file
-	@source ./common.sh && createSudoersFile
-
-cleanupKindClusters: ## Deletes kind clusters
-	@source ./common.sh && cleanupKindClusters
-
-cleanupRegistry: ## Deletes the registry
-	@source ./common.sh && cleanupRegistry
-
-setupRegistry: ## Sets up the registry
-	@source ./common.sh && setupRegistry
+setupDockerCompose: ## Sets up the registry and gitea
+	$(call runScript, setupDockerCompose)
 
 setupPlatformCluster: ## Sets up the platform cluster
-	@source ./common.sh && createKindCluster platform;
-	@source ./common.sh && setupPlatform
+	$(call runScript, createKindCluster platform)
+	$(call runScript, setupPlatform)
 
 setupWorkerCluster1: ## Sets up the worker cluster 1
-	@source ./common.sh && createKindCluster worker1;
-	@source ./common.sh && setupWorker worker1;
-	@source ./common.sh && setupDestination worker1
+	$(call runScript, createKindCluster worker1)
+	$(call runScript, setupWorker worker1)
+	$(call runScript, setupDestination worker1 dev team1)
 
 setupWorkerCluster2: ## Sets up the worker cluster 2
-	@source ./common.sh && createKindCluster worker2;
-	@source ./common.sh && setupWorker worker2;
-	@source ./common.sh && setupDestination worker2
+	$(call runScript, createKindCluster worker2)
+	$(call runScript, setupWorker worker2)
+	$(call runScript, setupDestination worker2 dev team2)
 
-runKindCloudProvider: ## Runs the kind cloud provider
-	@source ./common.sh && runCloudProviderKindInBackground
-
-stopKindCloudProvider: ## Runs the kind cloud provider
-	@source ./common.sh && stopCloudProviderKindInBackground
-
-run: runKindCloudProvider ## Runs local setup
-	@make -j 2 setupRegistry setupPlatformCluster
+run: ## Runs local setup
+	@make -j 2 setupDockerCompose setupPlatformCluster
 	@make -j 2 setupWorkerCluster1 setupWorkerCluster2
+
+listRegistryImages: ## Lists all the images in the registry
+	$(call runScript, listRegistryImages)
+
+cleanup: cleanupKindClusters cleanupDockerCompose ## Cleans up the kind clusters and docker composed registry/gitea
+
+cleanupKindClusters: ## Deletes kind clusters
+	$(call runScript, cleanupKindClusters)
+
+cleanupDockerCompose: ## Deletes the registry and gitea
+	$(call runScript, cleanupDockerCompose)
+
+wipeState: cleanup wipeGiteState wipeRegistryState ## Resets all the state for gitea and registry
+
+wipeGiteState: ## Remove all gitea state
+	$(call runScript, wipeGiteaState)
+
+wipeRegistryState: ## Remove all registry state
+	$(call runScript, wipeRegistryState)
