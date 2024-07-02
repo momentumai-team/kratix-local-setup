@@ -20,7 +20,7 @@ To list all the registry images:
 ## Setup
 
 - This will run a local [registry](http://localhost:35000/v2/_catalog) that can be accessed via port 35000
-- A gitea server with userid/pwd as gitea_admin/gitea_admin on [Gitea)[http://localhost:33000]
+- A gitea server with userid/pwd as gitea_admin/gitea_admin on [Gitea](http://localhost:33000)
 
 ```bash
 make run
