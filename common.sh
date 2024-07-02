@@ -122,13 +122,13 @@ EOF
 
 function setupWorker {
     name=$1
+    kubectl apply --context kind-${name} --filename https://raw.githubusercontent.com/syntasso/kratix/main/hack/destination/gitops-tk-install.yaml
     kubectl create secret generic gitea-credentials \
         --context kind-platform \
         --from-literal=username="gitea_admin" \
         --from-literal=password="gitea_admin" \
-        --namespace=default \
+        --namespace=flux-system \
         --dry-run=client -o yaml | kubectl apply --context kind-${name} -f -
-    kubectl apply --context kind-${name} --filename https://raw.githubusercontent.com/syntasso/kratix/main/hack/destination/gitops-tk-install.yaml
 cat <<EOF | kubectl apply --context kind-${name} --filename -
 ---
 apiVersion: source.toolkit.fluxcd.io/v1beta1
