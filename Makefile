@@ -28,7 +28,7 @@ setupWorkerCluster1: ## Sets up the worker cluster 1
 setupWorkerCluster2: ## Sets up the worker cluster 2
 	$(call runScript, createKindCluster worker2)
 	$(call runScript, setupWorker worker2)
-	$(call runScript, setupDestination worker2 dev team2)
+	$(call runScript, setupDestination worker2 prod team1)
 
 run: ## Runs local setup
 	@make -j 2 setupDockerCompose setupPlatformCluster
