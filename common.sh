@@ -8,6 +8,12 @@ function cleanupDockerCompose {
     docker-compose -p kratix down
 }
 
+function cleanup {
+    cleanupKindClusters
+    cleanupDockerCompose
+    docker network rm kind >> /dev/null 2>&1 || true
+}
+
 function wipeGiteaState {
     rm -rf gitea/data
     mkdir -p gitea/data
@@ -37,7 +43,9 @@ function setupDockerCompose {
 }
 
 function createKindCluster {
-    local name=$1
+   local name=$1
+# for creating a non-ipv6 network for kind
+docker network inspect kind &>/dev/null || docker network create kind
 
 cat <<EOF | kind create cluster --name ${name} --config -
 kind: Cluster
@@ -207,7 +215,7 @@ EOF
 }
 
 function listRegistryImages {
-    REGISTRY_URL="localhost:35000"
+    REGISTRY_URL="127.0.0.1:35000"
 
     # List all repositories
     REPOS=$(curl -s "http://$REGISTRY_URL/v2/_catalog" | jq -r '.repositories[]')
@@ -226,4 +234,10 @@ function listRegistryImages {
             echo "  Tag: $TAG with SHA256 Digest: $sha256"
         done
     done
+}
+
+function testRegistry {
+    docker pull nginx@sha256:db5e49f40979ce521f05f0bc9f513d0abacce47904e229f3a95c2e6d9b47f244
+    docker tag nginx@sha256:db5e49f40979ce521f05f0bc9f513d0abacce47904e229f3a95c2e6d9b47f244 localhost:35000/nginx:latest
+    docker push localhost:35000/nginx:latest
 }

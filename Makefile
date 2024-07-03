@@ -37,7 +37,8 @@ run: ## Runs local setup
 listRegistryImages: ## Lists all the images in the registry
 	$(call runScript, listRegistryImages)
 
-cleanup: cleanupKindClusters cleanupDockerCompose ## Cleans up the kind clusters and docker composed registry/gitea
+cleanup: ## Cleans up the kind clusters and docker composed registry/gitea
+	$(call runScript, cleanup)
 
 cleanupKindClusters: ## Deletes kind clusters
 	$(call runScript, cleanupKindClusters)
@@ -52,3 +53,6 @@ wipeGiteState: ## Remove all gitea state
 
 wipeRegistryState: ## Remove all registry state
 	$(call runScript, wipeRegistryState)
+
+testRegistry: ## Tests to make sure you can push images to the registry
+	$(call runScript, testRegistry)

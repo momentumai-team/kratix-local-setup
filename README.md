@@ -19,9 +19,29 @@ To list all the registry images:
 
 ## Setup
 
-- This will run a local [registry](http://localhost:35000/v2/_catalog) that can be accessed via port 35000
+- This will run a local [registry](http://127.0.0.1:35000/v2/_catalog) that can be accessed via port 35000
 - A gitea server with userid/pwd as gitea_admin/gitea_admin on [Gitea](http://localhost:33000)
 
 ```bash
 make run
+```
+
+## Validate
+
+Ensure you have added the following to your docker daemon configuration:
+
+```json
+{
+  "insecure-registries": ["localhost:35000"]
+}
+```
+
+- To validate the setup, run the following command:
+
+```bash
+docker buildx imagetools create --tag localhost:35000/nginx:latest nginx:latest
+kubectl --context kind-worker1 create deployment nginx \
+    --namespace=default \
+    --replicas=2 \
+    --image=localhost:35000/nginx:latest
 ```
